@@ -475,14 +475,15 @@ function renderFlowers(){
   if(!list.length){ grid.innerHTML = `<div class="empty">没有符合条件的花</div>`; return; }
   grid.innerHTML = list.map(f => cardHTML(f)).join('');
   // 绑定卡片事件
-  grid.querySelectorAll('.card').forEach(card => {
-    const fid = card.dataset.fid;
-    card.querySelector('.sel').onclick = e => { e.stopPropagation(); toggleBatch(fid); };
-    card.querySelector('.actions .have').onclick = e => { e.stopPropagation(); setOwn(fid, 'own'); };
-    card.querySelector('.actions .cult').onclick = e => { e.stopPropagation(); setOwn(fid, 'cult'); };
-    card.querySelectorAll('.owners .o').forEach(o => {
-      o.onclick = e => { e.stopPropagation(); const mid = o.dataset.mid; clearOwn(fid, mid); };
-    });
+  grid.querySelectorAll('.card').forEach(card => bindCardEvents(card));
+}
+function bindCardEvents(card){
+  const fid = card.dataset.fid;
+  card.querySelector('.sel').onclick = e => { e.stopPropagation(); toggleBatch(fid); };
+  card.querySelector('.actions .have').onclick = e => { e.stopPropagation(); setOwn(fid, 'own'); };
+  card.querySelector('.actions .cult').onclick = e => { e.stopPropagation(); setOwn(fid, 'cult'); };
+  card.querySelectorAll('.owners .o').forEach(o => {
+    o.onclick = e => { e.stopPropagation(); const mid = o.dataset.mid; clearOwn(fid, mid); };
   });
 }
 function cardHTML(f){
@@ -531,40 +532,101 @@ function toggleBatch(fid){
   renderFlowers(); updateBatchbar();
   restoreScroll();
 }
-/* 单朵标记（数据层） */
-async function setOwn(fid, status){
+/* 乐观更新：本地立即生效，不重拉数据、不整页刷新 */
+let _localMutations = {}; // flower_id -> 时间戳，用于抑制自身 Realtime 回声
+function localApplyOwn(fid, status){
   const me = state.me;
+  const f = state.flowers.find(x => x.id === fid);
+  if(!f) return;
+  const ownSet = state.ownersIndex[fid] || (state.ownersIndex[fid] = new Set());
+  const cultSet = state.cultIndex[fid] || (state.cultIndex[fid] = new Set());
+  ownSet.delete(me.id); cultSet.delete(me.id);
+  f.owners = (f.owners || []).filter(o => o.member_id !== me.id);
+  f.cultivation = (f.cultivation || []).filter(m => m !== me.id);
+  if(status === 'own'){ ownSet.add(me.id); f.owners = [...f.owners, { member_id: me.id, member_name: me.name }]; }
+  else { cultSet.add(me.id); f.cultivation = [...f.cultivation, me.id]; }
+  _localMutations[fid] = Date.now();
+}
+function localRemoveOwn(fid, mid){
+  const f = state.flowers.find(x => x.id === fid);
+  if(!f) return;
+  (state.ownersIndex[fid] || new Set()).delete(mid);
+  f.owners = (f.owners || []).filter(o => o.member_id !== mid);
+  f.cultivation = (f.cultivation || []).filter(m => m !== mid);
+  _localMutations[fid] = Date.now();
+}
+function cardVisibleInView(f){
+  const me = state.me;
+  const o = (state.ownersIndex[f.id] || new Set()).has(me.id);
+  const c = (state.cultIndex[f.id] || new Set()).has(me.id);
+  if(state.view === 'own') return o;
+  if(state.view === 'cult') return c;
+  if(state.view === 'none') return !(o || c);
+  return true;
+}
+function updateCount(){
+  const el = $('countTxt');
+  if(el) el.textContent = `${filteredFlowers().length}/${state.flowers.length}`;
+}
+function refreshCard(fid){
+  const f = state.flowers.find(x => x.id === fid);
+  if(!f) return;
+  const card = document.querySelector(`.card[data-fid="${esc(fid)}"]`);
+  if(!card) return;
+  if(!cardVisibleInView(f)){ card.remove(); updateCount(); return; }
+  const tmp = document.createElement('div');
+  tmp.innerHTML = cardHTML(f);
+  bindCardEvents(tmp.firstElementChild);
+  card.replaceWith(tmp.firstElementChild);
+}
+/* 单朵标记（数据层）：先本地生效，再写库；失败回滚重拉 */
+async function setOwn(fid, status){
+  localApplyOwn(fid, status);
+  refreshCard(fid);
   try{
     const st = status === 'own' ? 'own' : 'cultivating';
     // 先删同类，再插入（幂等）
-    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id).eq('status', st);
-    const { error } = await sb.from('flower_ownership').insert({ flower_id: fid, member_id: me.id, status: st });
+    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', state.me.id).eq('status', st);
+    const { error } = await sb.from('flower_ownership').insert({ flower_id: fid, member_id: state.me.id, status: st });
     if(error) throw error;
     // 删除另一种状态（避免同一花同时两种状态）
     const other = st === 'own' ? 'cultivating' : 'own';
-    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id).eq('status', other);
+    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', state.me.id).eq('status', other);
     toast(status==='own' ? '已标记拥有' : '已加入待培育');
-  }catch(e){ toast('操作失败：' + e.message); }
+  }catch(e){
+    toast('操作失败：' + e.message);
+    saveScroll(); await loadAll(); restoreScroll();
+  }
 }
 async function clearOwn(fid, mid){
   if(state.batchMode) return;
+  localRemoveOwn(fid, mid);
+  refreshCard(fid);
   try{
     await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', mid);
     toast('已取消');
-  }catch(e){ toast('操作失败：' + e.message); }
+  }catch(e){
+    toast('操作失败：' + e.message);
+    saveScroll(); await loadAll(); restoreScroll();
+  }
 }
-/* 批量标记 */
+/* 批量标记：先本地生效，再批量写库 */
 async function batchApply(status){
   const me = state.me, st = status === 'own' ? 'own' : 'cultivating';
   const list = [...state.batch];
+  list.forEach(fid => localApplyOwn(fid, st));
+  state.batch.clear(); updateBatchbar();
+  saveScroll(); renderFlowers(); restoreScroll();
   try{
     for(const fid of list){
       await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id);
       await sb.from('flower_ownership').insert({ flower_id: fid, member_id: me.id, status: st });
     }
     toast(`已批量标记 ${list.length} 朵`);
-    state.batch.clear(); updateBatchbar();
-  }catch(e){ toast('批量操作失败：' + e.message); }
+  }catch(e){
+    toast('批量操作失败：' + e.message);
+    saveScroll(); await loadAll(); restoreScroll();
+  }
 }
 /* 录入弹窗 */
 function openInput(){
@@ -822,7 +884,13 @@ function restoreScroll(){ if(_rtScroll > 0){ requestAnimationFrame(() => window.
 function subscribe(){
   if(state.rtChannel) return;
   const ch = sb.channel('public-live');
-  ['flower_ownership','competition_tasks','competition_logs','guild_members','guilds'].forEach(tbl => {
+  ch.on('postgres_changes', { event: '*', schema: 'public', table: 'flower_ownership' }, (payload) => {
+    // 自身回声抑制：自己 4 秒内本地写入的记录，本地已乐观更新，跳过刷新
+    const rec = payload.new || payload.old || {};
+    if(state.me && rec.member_id === state.me.id && _localMutations[rec.flower_id] && (Date.now() - _localMutations[rec.flower_id]) < 4000) return;
+    scheduleRefresh();
+  });
+  ['competition_tasks','competition_logs','guild_members','guilds'].forEach(tbl => {
     ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, () => scheduleRefresh());
   });
   ch.subscribe();
