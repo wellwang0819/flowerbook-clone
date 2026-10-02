@@ -43,6 +43,8 @@ flowerbook-clone/
    - **GitHub Pages**：把整个 `flowerbook-clone` 目录推到一个仓库，Settings → Pages → 选分支 → 获得公网链接，成员即可访问。
    - **Vercel / Netlify**：导入目录直接发布。
 
+> 本项目当前已部署于 GitHub Pages：**https://wellwang0819.github.io/flowerbook-clone/**（图片走相对路径，`IMG_BASE` 无需设置）。
+
 ## 三、配置微信小程序
 
 1. 注册小程序账号：https://mp.weixin.qq.com （个人/组织均可，需实名）。
@@ -50,7 +52,7 @@ flowerbook-clone/
 3. 导入工程：选择 `miniprogram/` 目录（AppID 用你自己的，或点「测试号」）。
 4. 编辑 `miniprogram/utils/config.js`，填入同样的 Supabase URL 与 anon key。
 5. **重要**：小程序 `wx.request` 要求配置合法域名。登录微信公众平台 → 开发管理 → 开发设置 → 服务器域名，把 `https://nkdeekkhhxyutmowcypr.supabase.co` 加进 **request 合法域名**（需 HTTPS；开发阶段可在开发者工具勾选「不校验合法域名」）。
-6. **花朵图片（可选）**：小程序自身不打包 574 张图片（主包体积限制），通过 `config.js` 的 `IMG_BASE` 加载网页端静态资源。网页端部署到 GitHub Pages 后，把 `IMG_BASE` 填为 `https://你的用户名.github.io/flowerbook-clone`；不填则卡片显示 🌸 占位，功能不受影响。
+6. **花朵图片（可选）**：小程序自身不打包 574 张图片（主包体积限制），通过 `config.js` 的 `IMG_BASE` 加载网页端静态资源。网页端部署到 GitHub Pages 后，把 `IMG_BASE` 填为 `https://wellwang0819.github.io/flowerbook-clone`；不填则卡片显示 🌸 占位，功能不受影响。
 7. **实时刷新机制**：网页端用 Supabase Realtime 推送（成员操作后自动刷新）；小程序端因域名/连接限制采用「下拉刷新 + 每次进入页面自动拉取 + 页面停留时静默轮询」保证多端数据一致。若需小程序端也走 Realtime 推送，可基于 `utils/supabase.js` 的 REST 封装另接 `wx.connectSocket`（详见微信文档，本工程未默认开启）。
 8. 编译预览即可使用。
 
