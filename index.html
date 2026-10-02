@@ -618,10 +618,10 @@ async function batchApply(status){
   state.batch.clear(); updateBatchbar();
   saveScroll(); renderFlowers(); restoreScroll();
   try{
-    for(const fid of list){
+    await Promise.all(list.map(async fid => {
       await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id);
       await sb.from('flower_ownership').insert({ flower_id: fid, member_id: me.id, status: st });
-    }
+    }));
     toast(`已批量标记 ${list.length} 朵`);
   }catch(e){
     toast('批量操作失败：' + e.message);
@@ -887,7 +887,7 @@ function subscribe(){
   ch.on('postgres_changes', { event: '*', schema: 'public', table: 'flower_ownership' }, (payload) => {
     // 自身回声抑制：自己 4 秒内本地写入的记录，本地已乐观更新，跳过刷新
     const rec = payload.new || payload.old || {};
-    if(state.me && rec.member_id === state.me.id && _localMutations[rec.flower_id] && (Date.now() - _localMutations[rec.flower_id]) < 4000) return;
+    if(state.me && rec.member_id === state.me.id && _localMutations[rec.flower_id] && (Date.now() - _localMutations[rec.flower_id]) < 8000) return;
     scheduleRefresh();
   });
   ['competition_tasks','competition_logs','guild_members','guilds'].forEach(tbl => {
