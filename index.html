@@ -527,7 +527,9 @@ function updateBatchbar(){
 function toggleBatch(fid){
   if(!state.batchMode) return;
   if(state.batch.has(fid)) state.batch.delete(fid); else state.batch.add(fid);
+  saveScroll();
   renderFlowers(); updateBatchbar();
+  restoreScroll();
 }
 /* 单朵标记（数据层） */
 async function setOwn(fid, status){
@@ -813,6 +815,10 @@ async function toggleTask(id, done){
 }
 
 /* ================= 实时订阅 ================= */
+/* 滚动位置保存/恢复：避免标记或实时刷新后跳到表头 */
+let _rtScroll = 0;
+function saveScroll(){ _rtScroll = window.scrollY || document.documentElement.scrollTop || 0; }
+function restoreScroll(){ if(_rtScroll > 0){ requestAnimationFrame(() => window.scrollTo(0, _rtScroll)); } }
 function subscribe(){
   if(state.rtChannel) return;
   const ch = sb.channel('public-live');
@@ -826,8 +832,10 @@ function scheduleRefresh(){
   clearTimeout(window._rt);
   window._rt = setTimeout(async () => {
     if(!state.me || state.loading) return;
+    saveScroll();
     await loadAll();
     if(location.hash.includes('competition')) await loadTasks();
+    restoreScroll();
   }, 350);
 }
 
