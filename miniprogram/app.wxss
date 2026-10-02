@@ -1,0 +1,98 @@
+/* 全局样式 */
+page {
+  background: #f7f4ee;
+  color: #3a3530;
+  font-size: 28rpx;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(90, 70, 50, 0.08);
+  border: 1rpx solid #ece5da;
+  overflow: hidden;
+}
+
+.btn {
+  background: #f5f1e9;
+  color: #6d675c;
+  border-radius: 18rpx;
+  padding: 14rpx 24rpx;
+  font-size: 26rpx;
+  border: none;
+  line-height: 1.4;
+}
+.btn-primary {
+  background: #d98e8e;
+  color: #fff;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+}
+.btn-leaf {
+  background: #7ba05b;
+  color: #fff;
+}
+.btn-gold {
+  background: #c9a227;
+  color: #fff;
+}
+.btn-danger {
+  background: #fdecec;
+  color: #c26f6f;
+}
+
+.seg {
+  display: flex;
+  background: #fff;
+  border: 1rpx solid #ece5da;
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+.seg .it {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0;
+  font-size: 26rpx;
+  color: #8a8378;
+  border-right: 1rpx solid #ece5da;
+}
+.seg .it:last-child { border-right: none; }
+.seg .it.on {
+  background: #d98e8e;
+  color: #fff;
+}
+.seg .it.on.gold {
+  background: #c9a227;
+}
+
+.empty {
+  text-align: center;
+  color: #8a8378;
+  padding: 120rpx 0;
+  font-size: 28rpx;
+}
+
+.loading {
+  text-align: center;
+  color: #8a8378;
+  padding: 120rpx 0;
+  font-size: 26rpx;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 80rpx;
+  transform: translateX(-50%);
+  background: rgba(50, 40, 30, 0.92);
+  color: #fff;
+  padding: 14rpx 32rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  z-index: 999;
+  max-width: 80%;
+  text-align: center;
+}

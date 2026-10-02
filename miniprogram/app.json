@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/flowers/flowers",
+    "pages/member/member",
+    "pages/competition/competition"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fbecec",
+    "navigationBarTitleText": "花册公会",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f4ee"
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

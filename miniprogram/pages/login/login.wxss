@@ -1,0 +1,52 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 160rpx;
+  box-sizing: border-box;
+}
+.hero { text-align: center; margin-bottom: 60rpx; }
+.logo {
+  width: 120rpx; height: 120rpx;
+  border-radius: 50%;
+  background: #d98e8e;
+  color: #fff;
+  font-size: 60rpx;
+  line-height: 120rpx;
+  margin: 0 auto 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(217, 142, 142, 0.35);
+}
+.gname { font-size: 40rpx; font-weight: 700; color: #4a4038; }
+.sub { font-size: 26rpx; color: #9a8f82; margin-top: 8rpx; }
+
+.panel {
+  width: 620rpx;
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 44rpx 40rpx;
+  box-shadow: 0 6rpx 24rpx rgba(90, 70, 50, 0.08);
+}
+.field { margin-bottom: 32rpx; }
+.label { font-size: 26rpx; color: #8a8378; margin-bottom: 14rpx; }
+.picker {
+  background: #f7f4ee;
+  border-radius: 18rpx;
+  padding: 22rpx 26rpx;
+  font-size: 30rpx;
+  color: #a8a197;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.picker.picked { color: #3a3530; }
+.arrow { color: #a8a197; }
+.pwd {
+  background: #f7f4ee;
+  border-radius: 18rpx;
+  padding: 22rpx 26rpx;
+  font-size: 30rpx;
+}
+.enter { margin-top: 12rpx; }
+.tip { color: #c26f6f; font-size: 25rpx; margin-top: 20rpx; text-align: center; }
+.tip.dim { color: #b5aea4; }

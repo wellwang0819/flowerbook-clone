@@ -1,0 +1,105 @@
+<view class="page">
+  <!-- 顶部 -->
+  <view class="topbar">
+    <view class="brand">
+      <view class="logo">花</view>
+      <view class="gname">{{guildName}}</view>
+    </view>
+    <view class="top-actions">
+      <view class="top-btn" bindtap="goCompetition">竞赛任务</view>
+      <view class="top-btn" bindtap="goMember">成员</view>
+      <view class="top-btn {{batchMode ? 'on' : ''}}" bindtap="toggleBatch">批量</view>
+      <view class="top-btn primary" bindtap="openInput">录入</view>
+    </view>
+  </view>
+
+  <!-- 视图筛选 -->
+  <view class="seg view-seg">
+    <view class="it {{view === 'all' ? 'on' : ''}}" data-k="all" bindtap="onViewTap">全部</view>
+    <view class="it {{view === 'own' ? 'on' : ''}}" data-k="own" bindtap="onViewTap">已拥有</view>
+    <view class="it {{view === 'cult' ? 'on' : ''}}" data-k="cult" bindtap="onViewTap">待培育</view>
+    <view class="it {{view === 'none' ? 'on' : ''}}" data-k="none" bindtap="onViewTap">未拥有</view>
+  </view>
+
+  <!-- 竞赛分筛选 -->
+  <scroll-view scroll-x class="score-scroll">
+    <view class="score-row">
+      <view wx:for="{{['无','9','14','21','23','25','28','30']}}" wx:key="*this"
+            class="chip {{score === item ? 'on' : ''}}" data-k="{{item}}" bindtap="onScoreTap">{{item}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 更多筛选 -->
+  <view class="more" wx:if="{{moreOpen}}">
+    <view class="chan-grid">
+      <view class="chip {{channel === '' ? 'on' : ''}}" data-k="" bindtap="onChannelTap">全部渠道</view>
+      <view wx:for="{{channels}}" wx:key="*this" class="chip {{channel === item ? 'on' : ''}}"
+            data-k="{{item}}" bindtap="onChannelTap">{{item}}</view>
+    </view>
+    <view class="sort-row">
+      <text class="sort-label">排序</text>
+      <picker range="{{['默认','竞赛分↓','竞赛分↑','拥有人数','花名A-Z']}}" value="{{sortIdx}}"
+              bindchange="onSortChange">
+        <view class="chip">{{sortName}}</view>
+      </picker>
+    </view>
+  </view>
+  <view class="more-toggle" bindtap="toggleMore">更多筛选 {{moreOpen ? '▴' : '▾'}}</view>
+
+  <!-- 搜索 -->
+  <view class="search-wrap">
+    <input class="search" placeholder="搜索花名" value="{{search}}" bindinput="onSearchInput" />
+  </view>
+
+  <!-- 计数 -->
+  <view class="count">共 {{countTxt}} 朵</view>
+
+  <!-- 卡片列表 -->
+  <view class="list" wx:if="{{!loading}}">
+    <view class="card" wx:for="{{flowers}}" wx:key="id"
+          data-id="{{item.id}}" bindtap="onCardTap">
+      <view class="thumb">
+        <image wx:if="{{item.img}}" src="{{item.img}}" mode="aspectFill" lazy-load />
+        <view wx:else class="ph">🌸</view>
+        <view class="sel {{item.badge}}" wx:if="{{batchMode}}">{{_sel[item.id] ? '✓' : ''}}</view>
+        <view class="badge {{item.badge}}">{{item.badge === 'own' ? '✓' : (item.badge === 'cult' ? '🌱' : '')}}</view>
+      </view>
+      <view class="body">
+        <view class="line1">
+          <text class="nm">{{item.name}}</text>
+          <text class="score" wx:if="{{item.score}}">{{item.score}}分</text>
+        </view>
+        <view class="line2">{{item.channel}}{{item.priceTxt ? ' · ' + item.priceTxt : ''}}</view>
+        <view class="owners">{{item.owners}}{{item.moreOwners}}</view>
+        <view class="actions">
+          <view class="btn small leaf" data-id="{{item.id}}" data-st="own" catchtap="setOwn">✅ 已拥有</view>
+          <view class="btn small gold" data-id="{{item.id}}" data-st="cult" catchtap="setOwn">🌱 待培育</view>
+        </view>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{!flowers.length}}">没有符合条件的花</view>
+  </view>
+  <view class="loading" wx:else>加载中…</view>
+
+  <!-- 批量操作条 -->
+  <view class="batch-bar" wx:if="{{batchMode}}">
+    <text class="bcount">已选 {{batchCount}}</text>
+    <view class="btn leaf" data-st="own" bindtap="batchApply">全部标为已拥有</view>
+    <view class="btn gold" data-st="cult" bindtap="batchApply">全部标为待培育</view>
+    <view class="btn" bindtap="toggleBatch">取消</view>
+  </view>
+
+  <!-- 录入弹窗 -->
+  <view class="mask" wx:if="{{showInput}}" bindtap="closeInput">
+    <view class="modal" catchtap="">
+      <view class="mtitle">批量录入</view>
+      <view class="seg">
+        <view class="it {{inputMode === 'own' ? 'on' : ''}}" data-k="own" bindtap="setInputMode">✅ 已拥有</view>
+        <view class="it {{inputMode === 'cult' ? 'on' : ''}} gold" data-k="cult" bindtap="setInputMode">🌱 待培育</view>
+      </view>
+      <textarea class="mtext" placeholder="每行一个花名，可粘贴多个" value="{{inputText}}" bindinput="onInputText" />
+      <view class="mhint">将标记为：{{inputHint}}</view>
+      <view class="btn btn-primary" bindtap="submitInput">提交</view>
+    </view>
+  </view>
+</view>

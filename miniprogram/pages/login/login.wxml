@@ -1,0 +1,31 @@
+<view class="login-page">
+  <view class="hero">
+    <view class="logo">花</view>
+    <view class="gname">{{guildName}}</view>
+    <view class="sub">花册公会 · 多人在线共享</view>
+  </view>
+
+  <view class="panel">
+    <view class="field">
+      <view class="label">请选择你的昵称</view>
+      <picker range="{{memberNames}}" value="{{memberIdx}}" bindchange="onMemberChange">
+        <view class="picker {{memberIdx >= 0 ? 'picked' : ''}}">
+          {{memberIdx >= 0 ? memberNames[memberIdx] : '请选择'}}
+          <text class="arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <view class="label">密码</view>
+      <input class="pwd" password placeholder="输入密码" value="{{password}}" bindinput="onPasswordInput" />
+    </view>
+
+    <button class="btn btn-primary enter" disabled="{{loading}}" bindtap="onLogin">
+      {{loading ? '登录中…' : '进入花册'}}
+    </button>
+
+    <view class="tip" wx:if="{{error}}">{{error}}</view>
+    <view class="tip dim">默认占位账号见部署文档 · 部署后请修改公会名与成员信息</view>
+  </view>
+</view>

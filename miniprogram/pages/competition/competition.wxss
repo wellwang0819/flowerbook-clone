@@ -1,0 +1,50 @@
+.page { padding: 24rpx 30rpx 80rpx; }
+.seg { margin-bottom: 24rpx; }
+
+.add-row { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
+.add-input {
+  flex: 1;
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 16rpx 24rpx;
+  font-size: 27rpx;
+  border: 1rpx solid #ece5da;
+}
+.add-btn { flex-shrink: 0; }
+
+.task-list { display: flex; flex-direction: column; gap: 14rpx; }
+.trow {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(90, 70, 50, 0.06);
+}
+.trow.done { opacity: 0.55; }
+.tick {
+  width: 44rpx; height: 44rpx;
+  border-radius: 50%;
+  border: 3rpx solid #d9d2c6;
+  margin-right: 20rpx;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 24rpx;
+  flex-shrink: 0;
+}
+.tick.on { background: #7ba05b; border-color: #7ba05b; }
+.ttitle { font-size: 28rpx; }
+.trow.done .ttitle { text-decoration: line-through; color: #a8a197; }
+
+.log-list { display: flex; flex-direction: column; gap: 12rpx; }
+.lrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+}
+.lt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lat { color: #a8a197; font-size: 22rpx; margin-left: 16rpx; flex-shrink: 0; }

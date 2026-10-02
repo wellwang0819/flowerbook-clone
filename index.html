@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>花册公会</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f2b8c6'/%3E%3Cpath d='M32 14c-7 0-11 5-11 10 0 3 2 5 3 6-1 1-2 2-2 4 0 4 4 6 10 6s10-2 10-6c0-2-1-3-2-4 1-1 3-3 3-6 0-5-4-10-11-10z' fill='%23fff'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f7f4ee; --card:#ffffff; --ink:#3a3530; --sub:#8a8378; --line:#ece5da;
+  --main:#d98e8e; --main-d:#c26f6f; --leaf:#7ba05b; --gold:#c9a227; --blue:#6b8fba;
+  --shadow:0 1px 3px rgba(90,70,50,.08),0 6px 18px rgba(90,70,50,.05);
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+button{font-family:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff;color:var(--ink);outline:none}
+input:focus,textarea:focus{border-color:var(--main)}
+.app{max-width:1180px;margin:0 auto;padding:0 12px 60px}
+
+/* ===== 顶栏 ===== */
+.topbar{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#fbecec,#f6ead9);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.topbar-in{max-width:1180px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px}
+.brand .logo{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f9d4dd,#e9a0b2);flex:none}
+.brand .gname{max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .sp{flex:1}
+.tbtn{padding:7px 13px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:13px;display:flex;align-items:center;gap:5px;transition:.15s}
+.tbtn:hover{border-color:var(--main)}
+.tbtn.primary{background:var(--main);color:#fff;border-color:var(--main)}
+.tbtn.primary:hover{background:var(--main-d)}
+.tbtn.avatar{display:flex;align-items:center;gap:6px}
+.avatar-dot{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f2b8c6,#c9a227);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+
+/* ===== 筛选条 ===== */
+.filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 2px 4px}
+.seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex-wrap:wrap}
+.seg button{padding:7px 13px;font-size:13px;color:var(--sub);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--main);color:#fff}
+.seg button.score.on{background:var(--gold)}
+.filterbar input.search{flex:1;min-width:150px;max-width:260px}
+.more-btn{font-size:12px;color:var(--sub)}
+.count{font-size:12px;color:var(--sub);margin-left:auto}
+
+/* ===== 卡片 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:10px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line);position:relative;transition:.15s}
+.card:hover{transform:translateY(-2px)}
+.card .thumb{aspect-ratio:1/1;background:#f1ede4;position:relative;overflow:hidden}
+.card .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.card .thumb .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:42px;color:#d8cfbe}
+.card .sc{badge}
+.badge{position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff}
+.badge.s30{background:#7d2c8f}.badge.s28{background:#a04c8a}.badge.s25{background:#c26f6f}
+.badge.s23{background:#d98e8e}.badge.s21{background:#e0a878}.badge.s14{background:#7ba05b}
+.badge.s9{background:#9aa8a0}.badge.s0{background:#b5aca2}
+.card .sel{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.9);background:rgba(255,255,255,.85);display:none;align-items:center;justify-content:center;font-size:14px;color:transparent;transition:.15s;backdrop-filter:blur(2px)}
+.card .sel.own,.card .sel.cult,.card.batch .sel{display:flex}
+.card .sel.own{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.card .sel.cult{background:var(--gold);border-color:var(--gold);color:#fff}
+.card .info{padding:9px 11px 11px}
+.card .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px}
+.card .nm .c{color:var(--main-d);font-size:12px}
+.card .meta{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.6}
+.card .meta .ch{display:inline-block;background:#f6efe2;color:#a07b2e;padding:0 6px;border-radius:6px;font-size:11px}
+.card .price{font-size:12px;color:#b06b3f;font-weight:600;margin-top:2px}
+.card .owners{margin-top:7px;display:flex;flex-wrap:wrap;gap:4px}
+.card .owners .o{font-size:11px;background:#f3efe7;border-radius:6px;padding:1px 6px;color:#6d675c;cursor:pointer}
+.card .owners .o:hover{background:#fde8e8;color:#c26f6f}
+.card .actions{display:flex;gap:6px;margin-top:9px}
+.card .actions button{flex:1;padding:6px 0;border-radius:9px;font-size:12px;border:1px solid var(--line);background:#faf8f3}
+.card .actions button.have{border-color:#cfe3bf;color:#5c8340;background:#f2f8ec}
+.card .actions button.cult{border-color:#f0e3bb;color:#a07b2e;background:#fdf8e9}
+.card .actions button.have.on{background:var(--leaf);color:#fff;border-color:var(--leaf)}
+.card .actions button.cult.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+.card .actions button:hover{filter:brightness(.97)}
+
+/* 批量模式 */
+.card.batch .sel{display:flex}
+.batchbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.06);padding:10px 14px;display:none;gap:8px;max-width:1180px;margin:0 auto}
+.batchbar.show{display:flex}
+.batchbar .cnt{display:flex;align-items:center;font-size:13px;margin-right:auto}
+.batchbar button{padding:9px 16px;border-radius:12px;font-size:13px}
+.batchbar .b1{background:var(--leaf);color:#fff}
+.batchbar .b2{background:var(--gold);color:#fff}
+.batchbar .b3{background:#f3efe7;color:var(--sub)}
+
+/* ===== 弹窗 ===== */
+.mask{position:fixed;inset:0;background:rgba(50,40,30,.45);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
+.mask.show{display:flex}
+.dialog{background:#fff;border-radius:18px;width:100%;max-width:420px;max-height:86vh;overflow:auto;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.dialog h3{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.dialog .row{margin-bottom:12px}
+.dialog label{display:block;font-size:12px;color:var(--sub);margin-bottom:6px}
+.dialog textarea{width:100%;min-height:110px;resize:vertical}
+.dialog .btns{display:flex;gap:10px;margin-top:16px}
+.dialog .btns button{flex:1;padding:11px 0;border-radius:12px;font-size:14px}
+.dialog .btns .ok{background:var(--main);color:#fff}
+.dialog .btns .ok:disabled{opacity:.5}
+.dialog .btns .cancel{background:#f3efe7}
+.seg2{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg2 button{flex:1;padding:9px 0;font-size:13px;color:var(--sub)}
+.seg2 button.on{background:var(--leaf);color:#fff}
+.seg2 button.on.cult-on{background:var(--gold)}
+
+/* ===== 成员菜单 ===== */
+.panel{position:fixed;top:0;right:0;bottom:0;width:min(340px,92vw);background:#fff;z-index:110;box-shadow:-10px 0 40px rgba(0,0,0,.15);transform:translateX(105%);transition:.25s;display:flex;flex-direction:column}
+.panel.show{transform:translateX(0)}
+.panel .ph{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.panel .ph .x{margin-left:auto}
+.member-list{flex:1;overflow:auto;padding:8px}
+.member-item{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:12px;cursor:pointer}
+.member-item:hover{background:#faf6ef}
+.member-item .nm{font-weight:600}
+.member-item .role{font-size:11px;color:#a07b2e;background:#f6efe2;border-radius:6px;padding:0 6px}
+.member-item .role.admin{color:#c26f6f;background:#fdecec}
+.member-item .cnt{margin-left:auto;font-size:12px;color:var(--sub)}
+.agg-seg{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.agg-seg button{font-size:12px;padding:6px 10px;border-radius:14px;background:#f5f1e9;color:var(--sub)}
+.agg-seg button.on{background:var(--main);color:#fff}
+.member-foot{padding:12px;border-top:1px solid var(--line)}
+.member-foot .logout{width:100%;padding:10px;border-radius:12px;background:#fdecec;color:#c26f6f;font-size:14px}
+
+/* ===== 竞赛页 ===== */
+.taskbar{display:flex;gap:8px;align-items:center;padding:12px 0}
+.taskbar input{flex:1}
+.task-list{margin-top:6px;display:flex;flex-direction:column;gap:8px}
+.task{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.task .tick{width:24px;height:24px;border-radius:8px;border:2px solid #d8d0c0;flex:none;display:flex;align-items:center;justify-content:center;color:transparent;font-size:14px;cursor:pointer}
+.task.done .tick{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.task .tt{flex:1}
+.task.done .tt{color:var(--sub);text-decoration:line-through}
+.task .tm{font-size:11px;color:var(--sub)}
+.log-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:8px}
+.log-item .who{color:var(--main-d);font-weight:600}
+.log-item .when{font-size:11px;color:var(--sub);margin-top:2px}
+
+/* ===== 登录页 ===== */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#fbecec 0%,#f6ead9 55%,#eef3e2 100%);padding:20px}
+.login-card{background:#fff;border-radius:22px;box-shadow:0 24px 60px rgba(120,80,50,.15);padding:34px 30px;width:100%;max-width:380px;text-align:center}
+.login-card .lg{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle at 35% 30%,#f9d4dd,#e9a0b2);display:flex;align-items:center;justify-content:center;font-size:32px}
+.login-card h1{font-size:20px}
+.login-card .gsub{font-size:13px;color:var(--sub);margin:6px 0 22px}
+.login-card .field{text-align:left;margin-bottom:14px}
+.login-card label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
+.login-card select{width:100%}
+.login-card .pw{width:100%}
+.login-card .err{color:#c0392b;font-size:13px;min-height:20px;margin-top:4px}
+.login-card .go{width:100%;padding:13px;border-radius:14px;background:var(--main);color:#fff;font-size:15px;font-weight:600;margin-top:6px}
+.login-card .go:disabled{opacity:.5}
+.login-card .tip{font-size:11px;color:#b9b0a2;margin-top:16px;line-height:1.7}
+
+/* ===== 杂项 ===== */
+.empty{padding:60px 0;text-align:center;color:var(--sub);font-size:14px}
+.spin{width:22px;height:22px;border:3px solid #eee;border-top-color:var(--main);border-radius:50%;animation:rot .8s linear infinite;margin:40px auto}
+@keyframes rot{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:rgba(50,40,30,.92);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:200;opacity:0;pointer-events:none;transition:.2s}
+.toast.show{opacity:1}
+.badge-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.navlink{color:var(--main-d);font-size:13px}
+@media(max-width:640px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:9px}
+  .seg button{padding:6px 10px;font-size:12px}
+  .topbar-in{padding:8px 10px}
+  .brand{font-size:15px}
+  .tbtn{min-height:38px}
+  .x.tbtn{min-width:40px;min-height:40px}
+  .agg-seg button{min-height:34px;padding:8px 12px}
+  .member-foot .logout{min-height:44px}
+  .dialog textarea{font-size:16px}
+  .batchbar .cnt{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- 批量操作条 -->
+<div class="batchbar" id="batchbar">
+  <span class="cnt" id="batchCnt">已选 0 朵</span>
+  <button class="b1" id="batchHave">标记已拥有</button>
+  <button class="b2" id="batchCult">标记待培育</button>
+  <button class="b3" id="batchCancel">取消</button>
+</div>
+
+<!-- 录入弹窗 -->
+<div class="mask" id="inputMask">
+  <div class="dialog">
+    <h3>录入花名</h3>
+    <div class="row">
+      <label>状态</label>
+      <div class="seg2">
+        <button id="inpOwn" class="on">✅ 已拥有</button>
+        <button id="inpCult">🌱 待培育</button>
+      </div>
+    </div>
+    <div class="row">
+      <label>花名（用顿号、逗号或换行分隔多朵）</label>
+      <textarea id="inpText" placeholder="例如：蝴蝶兰、粉百合、红玫瑰"></textarea>
+    </div>
+    <div class="btns">
+      <button class="cancel" id="inpCancel">取消</button>
+      <button class="ok" id="inpOk">确认录入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 成员菜单 -->
+<div class="panel" id="memberPanel">
+  <div class="ph">
+    <span style="font-weight:700;font-size:16px">成员</span>
+    <span class="sp" style="flex:1"></span>
+    <button class="x tbtn" id="mpClose">✕</button>
+  </div>
+  <div class="agg-seg" id="aggSeg">
+    <button data-agg="mine" class="on">我的</button>
+    <button data-agg="all">全体成员 · 聚合</button>
+  </div>
+  <div class="member-list" id="memberList"></div>
+  <div class="member-foot"><button class="logout" id="logoutBtn">退出登录</button></div>
+</div>
+
+<script>
+/* ================= 配置区（部署时修改） ================= */
+const SUPABASE_URL = 'https://nkdeekkhhxyutmowcypr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rZGVla2toaHh5dXRtb3djeXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4ODkxNjgsImV4cCI6MjEwNjQ2NTE2OH0.CamasD8QxSjGfxH_LhZeR7ruESXkGdqXHhDE1DhvP0U';
+const GUILD_ID = '00000000-0000-0000-0000-000000000001';
+
+/* ================= 全局 ================= */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const state = {
+  guild: null, members: [], flowers: [], home: null, extra: null,
+  me: null, view: 'all', score: '', channel: '', search: '', sort: 'default',
+  aggMode: 'mine', aggFilter: 'all', tasks: [], logs: [], batch: new Set(), batchMode: false,
+  rtChannel: null, loading: false
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const channelList = ['活动鲜花','礼包花圃','花坊','等级花','花灵','鲜花礼包','花之密令','星河映蕊','VIP商店','花灵商店','累计充值','星辰商店','活动','星辰'];
+const scoreList = [['无',''],['9','9'],['14','14'],['21','21'],['23','23'],['25','25'],['28','28'],['30','30']];
+const SCORE_LABEL = {9:'凡品',14:'普品',21:'珍品',23:'珍品',25:'华品',28:'仙品',30:'仙品'};
+
+/* ================= 工具 ================= */
+async function sha256Hex(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function fmtPrice(f){
+  if (f.price != null && f.price !== '' && f.price !== 'NULL') {
+    const n = Number(f.price);
+    const v = Number.isInteger(n) ? String(n) : String(n);
+    return f.currency ? (v + ' ' + f.currency) : v;
+  }
+  if (f.order_exp) return f.order_exp;
+  return '';
+}
+function fmtTime(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function toast(msg){
+  let t = document.querySelector('.toast');
+  if(!t){ t = document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+/* ================= 数据层 ================= */
+async function api(fn, body){
+  const { data, error } = await sb.rpc(fn, body || { p_guild_id: GUILD_ID });
+  if (error) throw new Error(error.message);
+  return data;
+}
+async function loadAll(){
+  state.loading = true; renderSkeleton();
+  try{
+    const [home, extra, guild, members] = await Promise.all([
+      api('get_guild_home_data'), api('get_guild_extra_data'),
+      sb.from('guilds').select('*').eq('id', GUILD_ID).maybeSingle(),
+      sb.from('guild_members').select('*').eq('guild_id', GUILD_ID).eq('status','active').order('created_at')
+    ]);
+    state.guild = guild.data || { name: '（公会名称待设置）' };
+    state.members = members.data || [];
+    state.home = home; state.extra = extra;
+    state.flowers = (extra.flowers || []).map(f => ({
+      ...f,
+      owners: (home.flowers.find(h => h.id === f.id) || {}).owners || [],
+      cultivation: (extra.cultivation || {})[f.id] || []
+    }));
+    state.ownersIndex = {}; // flower_id -> Set(member_id)
+    state.cultIndex = {};
+    (home.flowers||[]).forEach(hf => {
+      const o = new Set(); (hf.owners||[]).forEach(o_ => o.add(o_.member_id));
+      state.ownersIndex[hf.id] = o;
+    });
+    Object.entries(extra.cultivation||{}).forEach(([fid, mids]) => state.cultIndex[fid] = new Set(mids));
+  }catch(e){
+    toast('数据加载失败：' + e.message);
+  }
+  state.loading = false;
+  render();
+}
+async function loadTasks(){
+  try{
+    const [t, l] = await Promise.all([
+      sb.from('competition_tasks').select('*').eq('guild_id', GUILD_ID).order('sort_order').order('created_at'),
+      sb.from('competition_logs').select('*').eq('guild_id', GUILD_ID).order('created_at', {ascending:false}).limit(200)
+    ]);
+    state.tasks = t.data || []; state.logs = l.data || [];
+  }catch(e){ toast('任务加载失败'); }
+}
+
+/* ================= 视图：登录 ================= */
+function renderLogin(){
+  $('root').innerHTML = `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="lg">🌸</div>
+      <h1>${esc((state.guild && state.guild.name) || '花册公会')}</h1>
+      <div class="gsub">花册公会 · 多人在线共享</div>
+      <div class="field">
+        <label>选择你的昵称</label>
+        <select id="loginMember"><option value="">请选择</option>
+          ${state.members.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input class="pw" type="password" id="loginPw" placeholder="输入密码" autocomplete="current-password">
+      </div>
+      <div class="err" id="loginErr"></div>
+      <button class="go" id="loginGo">进入花册</button>
+      <div class="tip">默认占位账号见部署文档 · 部署后请修改公会名与成员信息</div>
+    </div>
+  </div>`;
+  const member = state.members.find(m => m.id === state.me?.id);
+  if (member) { $('loginMember').value = member.id; $('loginPw').focus(); }
+  $('loginMember').addEventListener('change', () => { $('loginErr').textContent=''; if($('loginMember').value) $('loginPw').focus(); });
+  $('loginGo').addEventListener('click', doLogin);
+  $('loginPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+}
+async function doLogin(){
+  const id = $('loginMember').value, pw = $('loginPw').value;
+  const err = $('loginErr');
+  if(!id){ err.textContent='请选择昵称'; return; }
+  if(!pw){ err.textContent='请输入密码'; return; }
+  const m = state.members.find(x => x.id === id);
+  if(!m){ err.textContent='成员不存在'; return; }
+  $('loginGo').disabled = true;
+  const h = await sha256Hex(pw);
+  if(h !== m.password_hash){ err.textContent='密码错误'; $('loginGo').disabled=false; return; }
+  state.me = { id: m.id, name: m.name, role: m.role };
+  try{ localStorage.setItem('fb_me', JSON.stringify(state.me)); }catch(e){}
+  $('loginGo').disabled = false;
+  location.hash = '#/home';
+  render();
+}
+
+/* ================= 视图：主页 ================= */
+function render(){
+  const hash = location.hash || '#/login';
+  if(hash.startsWith('#/login')){ if(!state.me) renderLogin(); else location.hash='#/home'; return; }
+  if(!state.me){
+    const saved = localStorage.getItem('fb_me');
+    if(saved){ try{ state.me = JSON.parse(saved); }catch(e){} }
+    if(!state.me){ renderLogin(); return; }
+  }
+  if(hash.startsWith('#/competition')){ renderCompetition(); return; }
+  renderHome();
+}
+function renderSkeleton(){
+  $('root').innerHTML = `<div class="app"><div class="spin"></div></div>`;
+}
+function renderHome(){
+  const me = state.me;
+  const root = $('root');
+  root.innerHTML = `
+  <div class="topbar"><div class="topbar-in">
+    <div class="brand"><span class="logo"></span><span class="gname">${esc((state.guild && state.guild.name) || '花册公会')}</span></div>
+    <span class="sp"></span>
+    <a class="navlink" href="#/competition">竞赛任务</a>
+    <button class="tbtn" id="batchBtn">批量</button>
+    <button class="tbtn primary" id="inputBtn">录入</button>
+    <button class="tbtn avatar" id="meBtn"><span class="avatar-dot">${esc(me.name[0])}</span><span>${esc(me.name)}</span></button>
+  </div></div>
+  <div class="app">
+    <div class="filterbar">
+      <div class="seg" id="segView"></div>
+      <div class="seg" id="segScore"></div>
+      <button class="more-btn" id="moreBtn">更多筛选 ▾</button>
+      <input class="search" id="searchInput" placeholder="搜索花名...">
+      <span class="count" id="countTxt"></span>
+    </div>
+    <div id="moreFilter" style="display:none" class="filterbar">
+      <div class="seg" id="segChannel"></div>
+      <select id="sortSel">
+        <option value="default">默认排序</option>
+        <option value="score-desc">竞赛分 ↓</option>
+        <option value="score-asc">竞赛分 ↑</option>
+        <option value="owner-desc">拥有人数 ↓</option>
+        <option value="owner-asc">拥有人数 ↑</option>
+        <option value="name">花名 A-Z</option>
+      </select>
+    </div>
+    <div class="grid" id="flowerGrid"></div>
+  </div>`;
+
+  // 视图筛选
+  const segView = $('segView');
+  [['全部','all'],['已拥有','own'],['待培育','cult'],['未拥有','none']].forEach(([t,k]) => {
+    const b = document.createElement('button');
+    b.textContent = t; b.className = state.view===k ? 'on' : '';
+    b.onclick = () => { state.view = k; renderHome(); };
+    segView.appendChild(b);
+  });
+  // 竞赛分
+  const segScore = $('segScore');
+  scoreList.forEach(([t,k]) => {
+    const b = document.createElement('button');
+    b.textContent = t; b.className = state.score===k ? 'on score' : '';
+    b.onclick = () => { state.score = state.score===k ? '' : k; renderHome(); };
+    segScore.appendChild(b);
+  });
+  // 渠道
+  const segChannel = $('segChannel');
+  [['全部渠道',''], ...channelList.map(c => [c, c])].forEach(([t,k]) => {
+    const b = document.createElement('button');
+    b.textContent = t; b.className = state.channel===k ? 'on' : '';
+    b.onclick = () => { state.channel = state.channel===k ? '' : k; renderHome(); };
+    segChannel.appendChild(b);
+  });
+  $('moreBtn').onclick = () => { const el=$('moreFilter'); el.style.display = el.style.display==='none' ? 'flex' : 'none'; };
+  $('sortSel').value = state.sort;
+  $('sortSel').onchange = e => { state.sort = e.target.value; renderHome(); };
+  $('searchInput').value = state.search;
+  $('searchInput').addEventListener('input', debounce(() => { state.search = $('searchInput').value.trim(); renderFlowers(); }, 200));
+  $('inputBtn').onclick = openInput;
+  $('batchBtn').onclick = () => { state.batchMode = !state.batchMode; if(!state.batchMode) state.batch.clear(); renderFlowers(); updateBatchbar(); };
+  $('meBtn').onclick = openMemberPanel;
+
+  renderFlowers();
+}
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); }; }
+function filteredFlowers(){
+  const me = state.me;
+  return state.flowers.filter(f => {
+    if(state.view === 'own' && !(state.ownersIndex[f.id]||new Set()).has(me.id)) return false;
+    if(state.view === 'cult' && !(state.cultIndex[f.id]||new Set()).has(me.id)) return false;
+    if(state.view === 'none' && ((state.ownersIndex[f.id]||new Set()).has(me.id) || (state.cultIndex[f.id]||new Set()).has(me.id))) return false;
+    if(state.score && String(f.competition_score) !== state.score) return false;
+    if(state.channel && f.primary_channel !== state.channel) return false;
+    if(state.search && !f.name.includes(state.search)) return false;
+    return true;
+  });
+}
+function sortedFlowers(list){
+  const s = state.sort;
+  const arr = [...list];
+  if(s === 'score-desc') arr.sort((a,b) => b.competition_score - a.competition_score);
+  else if(s === 'score-asc') arr.sort((a,b) => a.competition_score - b.competition_score || a.name.localeCompare(b.name,'zh'));
+  else if(s === 'owner-desc') arr.sort((a,b) => (b.owners.length) - (a.owners.length));
+  else if(s === 'owner-asc') arr.sort((a,b) => (a.owners.length) - (b.owners.length));
+  else if(s === 'name') arr.sort((a,b) => a.name.localeCompare(b.name,'zh'));
+  else arr.sort((a,b) => b.competition_score - a.competition_score || a.name.localeCompare(b.name,'zh'));
+  return arr;
+}
+function renderFlowers(){
+  const list = sortedFlowers(filteredFlowers());
+  $('countTxt').textContent = `${list.length}/${state.flowers.length}`;
+  const grid = $('flowerGrid');
+  if(!list.length){ grid.innerHTML = `<div class="empty">没有符合条件的花</div>`; return; }
+  grid.innerHTML = list.map(f => cardHTML(f)).join('');
+  // 绑定卡片事件
+  grid.querySelectorAll('.card').forEach(card => {
+    const fid = card.dataset.fid;
+    card.querySelector('.sel').onclick = e => { e.stopPropagation(); toggleBatch(fid); };
+    card.querySelector('.actions .have').onclick = e => { e.stopPropagation(); setOwn(fid, 'own'); };
+    card.querySelector('.actions .cult').onclick = e => { e.stopPropagation(); setOwn(fid, 'cult'); };
+    card.querySelectorAll('.owners .o').forEach(o => {
+      o.onclick = e => { e.stopPropagation(); const mid = o.dataset.mid; clearOwn(fid, mid); };
+    });
+  });
+}
+function cardHTML(f){
+  const me = state.me;
+  const own = (state.ownersIndex[f.id]||new Set()).has(me.id);
+  const cult = (state.cultIndex[f.id]||new Set()).has(me.id);
+  const s = f.competition_score || 0;
+  const badgeCls = s===30?'s30':s===28?'s28':s===25?'s25':s===23?'s23':s===21?'s21':s===14?'s14':s===9?'s9':'s0';
+  const owners = f.owners || [];
+  const selState = own ? 'own' : (cult ? 'cult' : '');
+  const selShow = state.batchMode || own || cult;
+  const price = fmtPrice(f);
+  return `
+  <div class="card ${state.batchMode?'batch':''}" data-fid="${esc(f.id)}">
+    <div class="thumb">
+      ${f.image_url ? `<img src="${esc(f.image_url)}" alt="${esc(f.name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph&quot;>🌸</div>'">` : `<div class="ph">🌸</div>`}
+      <span class="badge ${badgeCls}">${s}分</span>
+      <span class="sel ${selState}" title="${state.batchMode ? '勾选批量' : (own?'已拥有':'待培育')}">${own?'✓':(cult?'🌱':'')}</span>
+    </div>
+    <div class="info">
+      <div class="nm">${esc(f.name)}${f.is_custom?'<span class="c">·自</span>':''}</div>
+      <div class="meta"><span class="ch">${esc(f.primary_channel||'未标注')}</span> ${SCORE_LABEL[s]?('·'+SCORE_LABEL[s]):''}</div>
+      ${price ? `<div class="price">${esc(price)}${f.vase ? ' · 花瓶：'+esc(f.vase) : ''}</div>` : ''}
+      <div class="owners">
+        ${owners.map(o => `<span class="o" data-mid="${esc(o.member_id)}">${esc(o.member_name)}${o.member_id===me.id?'（我）':''}</span>`).join('')}
+        ${(f.cultivation||[]).filter(mid => mid!==me.id && !owners.some(o=>o.member_id===mid)).map(mid => {
+          const m = state.members.find(x=>x.id===mid); return `<span class="o" data-mid="${esc(mid)}" style="background:#fdf6de">🌱${esc(m?m.name:mid)}</span>`;
+        }).join('')}
+      </div>
+      <div class="actions">
+        <button class="have ${own?'on':''}" data-act="have">${own?'✓ 已拥有':'已拥有'}</button>
+        <button class="cult ${cult?'on':''}" data-act="cult">${cult?'🌱 待培育':'待培育'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+function updateBatchbar(){
+  const bar = $('batchbar');
+  bar.classList.toggle('show', state.batchMode && state.batch.size > 0);
+  $('batchCnt').textContent = `已选 ${state.batch.size} 朵`;
+}
+function toggleBatch(fid){
+  if(!state.batchMode) return;
+  if(state.batch.has(fid)) state.batch.delete(fid); else state.batch.add(fid);
+  renderFlowers(); updateBatchbar();
+}
+/* 单朵标记（数据层） */
+async function setOwn(fid, status){
+  const me = state.me;
+  try{
+    const st = status === 'own' ? 'own' : 'cultivating';
+    // 先删同类，再插入（幂等）
+    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id).eq('status', st);
+    const { error } = await sb.from('flower_ownership').insert({ flower_id: fid, member_id: me.id, status: st });
+    if(error) throw error;
+    // 删除另一种状态（避免同一花同时两种状态）
+    const other = st === 'own' ? 'cultivating' : 'own';
+    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id).eq('status', other);
+    toast(status==='own' ? '已标记拥有' : '已加入待培育');
+  }catch(e){ toast('操作失败：' + e.message); }
+}
+async function clearOwn(fid, mid){
+  if(state.batchMode) return;
+  try{
+    await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', mid);
+    toast('已取消');
+  }catch(e){ toast('操作失败：' + e.message); }
+}
+/* 批量标记 */
+async function batchApply(status){
+  const me = state.me, st = status === 'own' ? 'own' : 'cultivating';
+  const list = [...state.batch];
+  try{
+    for(const fid of list){
+      await sb.from('flower_ownership').delete().eq('flower_id', fid).eq('member_id', me.id);
+      await sb.from('flower_ownership').insert({ flower_id: fid, member_id: me.id, status: st });
+    }
+    toast(`已批量标记 ${list.length} 朵`);
+    state.batch.clear(); updateBatchbar();
+  }catch(e){ toast('批量操作失败：' + e.message); }
+}
+/* 录入弹窗 */
+function openInput(){
+  $('inputMask').classList.add('show');
+  $('inpText').value = ''; $('inpText').focus();
+  $('inpOwn').className = 'on'; $('inpCult').className = '';
+  window._inpStatus = 'own';
+  $('inpOk').disabled = true;
+}
+$('inpOwn') && ($('inpOwn').onclick = () => { $('inpOwn').className='on'; $('inpCult').className=''; window._inpStatus='own'; $('inpOk').disabled = !$('inpText').value.trim(); });
+$('inpCult') && ($('inpCult').onclick = () => { $('inpCult').className='on cult-on'; $('inpOwn').className=''; window._inpStatus='cult'; $('inpOk').disabled = !$('inpText').value.trim(); });
+$('inpText') && ($('inpText').addEventListener('input', () => { $('inpOk').disabled = !$('inpText').value.trim(); }));
+$('inpCancel') && ($('inpCancel').onclick = () => $('inputMask').classList.remove('show'));
+$('inpOk') && ($('inpOk').onclick = async () => {
+  const names = $('inpText').value.split(/[、，,;\n\r]+/).map(s => s.trim()).filter(Boolean);
+  const me = state.me, st = window._inpStatus === 'cult' ? 'cultivating' : 'own';
+  if(!names.length) return;
+  $('inpOk').disabled = true;
+  let ok = 0, miss = [];
+  for(const n of names){
+    const f = state.flowers.find(x => x.name === n);
+    if(!f){ miss.push(n); continue; }
+    try{
+      await sb.from('flower_ownership').delete().eq('flower_id', f.id).eq('member_id', me.id);
+      await sb.from('flower_ownership').insert({ flower_id: f.id, member_id: me.id, status: st });
+      ok++;
+    }catch(e){ miss.push(n); }
+  }
+  toast(`成功录入 ${ok} 朵${miss.length ? '，未匹配：' + miss.slice(0,3).join('、') : ''}`);
+  $('inputMask').classList.remove('show');
+});
+$('batchHave') && ($('batchHave').onclick = () => batchApply('own'));
+$('batchCult') && ($('batchCult').onclick = () => batchApply('cult'));
+$('batchCancel') && ($('batchCancel').onclick = () => { state.batchMode=false; state.batch.clear(); renderHome(); updateBatchbar(); });
+/* ================= 成员面板 ================= */
+let aggTarget = null; // 聚合查看的成员 id（null=我的视角）
+function openMemberPanel(){
+  aggTarget = state.me.id;
+  $('memberPanel').classList.add('show');
+  renderMemberPanel();
+}
+function renderMemberPanel(){
+  const me = state.me;
+  const seg = $('aggSeg');
+  seg.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('on', b.dataset.agg === 'mine');
+    b.onclick = () => {
+      seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      if(b.dataset.agg === 'mine'){ aggTarget = state.me.id; renderMineMembers(); }
+      else renderAggAll();
+    };
+  });
+  if(aggTarget === null || aggTarget === me.id){
+    renderMineMembers();
+  } else {
+    renderAggregate(aggTarget);
+  }
+}
+function renderAggAll(){
+  aggTarget = null;
+  const list = $('memberList');
+  list.innerHTML = `
+    <div style="padding:8px 10px;font-size:13px;color:var(--sub)">全体成员聚合 · 只读（一行一朵，显示各成员拥有状态）</div>
+    <div class="agg-seg" style="border:none;padding:6px 10px">
+      <button data-f="all" class="on">全部</button>
+      <button data-f="have">有人拥有</button>
+      <button data-f="cult">有人待培育</button>
+      <button data-f="none">全员未拥有</button>
+    </div>
+    <div id="aggAllList"></div>`;
+  list.querySelectorAll('.agg-seg button').forEach(b => {
+    b.onclick = () => { list.querySelectorAll('.agg-seg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderAggAllList(b.dataset.f); };
+  });
+  renderAggAllList('all');
+}
+function renderAggAllList(filt){
+  const box = $('aggAllList');
+  const rows = state.flowers.filter(f => {
+    const ownSet = state.ownersIndex[f.id]||new Set();
+    const cultSet = state.cultIndex[f.id]||new Set();
+    if(filt==='have' && ownSet.size===0) return false;
+    if(filt==='cult' && cultSet.size===0) return false;
+    if(filt==='none' && (ownSet.size>0||cultSet.size>0)) return false;
+    return true;
+  }).sort((a,b)=>b.competition_score-a.competition_score);
+  box.innerHTML = rows.map(f => {
+    const badges = state.members.map(m => {
+      const own = (state.ownersIndex[f.id]||new Set()).has(m.id);
+      const cult = (state.cultIndex[f.id]||new Set()).has(m.id);
+      if(own) return `<span style="display:inline-block;background:#f2f8ec;color:#5c8340;border-radius:6px;padding:1px 6px;font-size:11px;margin:2px 3px 0 0">✓${esc(m.name)}</span>`;
+      if(cult) return `<span style="display:inline-block;background:#fdf8e9;color:#a07b2e;border-radius:6px;padding:1px 6px;font-size:11px;margin:2px 3px 0 0">🌱${esc(m.name)}</span>`;
+      return '';
+    }).filter(Boolean).join('');
+    return `<div style="padding:8px 10px;border-radius:10px;background:#faf8f3;margin-bottom:6px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">${esc(f.name)}</span><span style="font-size:11px;color:var(--sub)">${f.competition_score}分</span></div>
+      <div style="margin-top:4px">${badges || '<span style="font-size:11px;color:#bbb">全员未拥有</span>'}</div>
+    </div>`;
+  }).join('') || '<div class="empty">没有符合条件的花</div>';
+}
+function renderMineMembers(){
+  const list = $('memberList');
+  const rows = state.members.map(m => {
+    const ownN = Object.values(state.ownersIndex).filter(s => s.has(m.id)).length;
+    const cultN = Object.values(state.cultIndex).filter(s => s.has(m.id)).length;
+    const roleTxt = {admin:'管理员',vice:'管理员',mgr:'理事',elite:'菁英',member:'成员'}[m.role] || m.role;
+    return `<div class="member-item" data-mid="${esc(m.id)}">
+      <span class="avatar-dot">${esc(m.name[0])}</span>
+      <span class="nm">${esc(m.name)}${m.id===me.id?'（我）':''}</span>
+      <span class="role ${m.role==='admin'||m.role==='vice'?'admin':''}">${roleTxt}</span>
+      <span class="cnt">拥有 ${ownN} · 待培育 ${cultN}</span>
+    </div>`;
+  }).join('');
+  list.innerHTML = rows + `<div class="empty" style="padding:24px 0;font-size:12px">点击成员可查看其花册视角</div>`;
+  list.querySelectorAll('.member-item').forEach(el => {
+    el.onclick = () => { aggTarget = el.dataset.mid; renderMemberPanel(); };
+  });
+}
+function renderAggregate(mid){
+  const m = state.members.find(x => x.id === mid);
+  const list = $('memberList');
+  list.innerHTML = `
+    <div style="padding:8px 10px;font-size:13px;color:var(--sub)">查看成员 <b style="color:var(--ink)">${esc(m ? m.name : mid)}</b> 的视角（只读） · <a href="javascript:;" id="aggBack" style="color:var(--main-d)">返回</a></div>
+    <div class="agg-seg" style="border:none;padding:6px 10px">
+      <button data-f="all" class="on">全部</button>
+      <button data-f="have">有人拥有</button>
+      <button data-f="cult">有人待培育</button>
+      <button data-f="none">全员未拥有</button>
+    </div>
+    <div id="aggFlowers"></div>`;
+  $('aggBack').onclick = () => { aggTarget = state.me.id; renderMemberPanel(); };
+  list.querySelectorAll('.agg-seg button').forEach(b => {
+    b.onclick = () => { list.querySelectorAll('.agg-seg button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderAggFlowers(mid, b.dataset.f); };
+  });
+  renderAggFlowers(mid, 'all');
+}
+function renderAggFlowers(mid, filt){
+  const box = $('aggFlowers');
+  const m = state.members.find(x => x.id === mid);
+  if(!m){ box.innerHTML = `<div class="empty">成员不存在</div>`; return; }
+  const rows = state.flowers.filter(f => {
+    const own = (state.ownersIndex[f.id]||new Set()).has(mid);
+    const cult = (state.cultIndex[f.id]||new Set()).has(mid);
+    if(filt==='have' && !own) return false;
+    if(filt==='cult' && !cult) return false;
+    if(filt==='none' && (own||cult)) return false;
+    return true;
+  }).sort((a,b)=>b.competition_score-a.competition_score);
+  box.innerHTML = rows.map(f => {
+    const own = (state.ownersIndex[f.id]||new Set()).has(mid);
+    const cult = (state.cultIndex[f.id]||new Set()).has(mid);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:#faf8f3;margin-bottom:6px;font-size:13px">
+      <span style="flex:none;width:22px;text-align:center">${own?'✅':(cult?'🌱':'')}</span>
+      <span style="flex:1">${esc(f.name)}</span>
+      <span style="font-size:11px;color:var(--sub)">${f.competition_score}分 · ${(f.owners||[]).length}人拥有</span>
+    </div>`;
+  }).join('') || `<div class="empty">没有符合条件的花</div>`;
+}
+$('mpClose') && ($('mpClose').onclick = () => $('memberPanel').classList.remove('show'));
+$('logoutBtn') && ($('logoutBtn').onclick = () => {
+  state.me = null;
+  try{ localStorage.removeItem('fb_me'); }catch(e){}
+  $('memberPanel').classList.remove('show');
+  location.hash = '#/login';
+  render();
+});
+document.addEventListener('click', e => {
+  if(e.target.id === 'memberPanel' || e.target.closest('.panel')) return;
+  if($('memberPanel').classList.contains('show') && !e.target.closest('#meBtn') && !e.target.closest('.panel')) {
+    $('memberPanel').classList.remove('show');
+  }
+});
+
+/* ================= 竞赛任务页 ================= */
+let taskTab = 'tasks';
+function renderCompetition(){
+  const root = $('root');
+  root.innerHTML = `
+  <div class="topbar"><div class="topbar-in">
+    <div class="brand"><span class="logo"></span><span class="gname">${esc((state.guild && state.guild.name) || '花册公会')}</span></div>
+    <span class="sp"></span>
+    <a class="navlink" href="#/home">← 返回花册</a>
+    <button class="tbtn avatar" id="meBtn2"><span class="avatar-dot">${esc(state.me.name[0])}</span><span>${esc(state.me.name)}</span></button>
+  </div></div>
+  <div class="app">
+    <h2 style="font-size:18px;margin:14px 0 4px">竞赛任务</h2>
+    <div class="taskbar">
+      <input id="taskInput" placeholder="添加任务，如：本周收集 5 朵 30 分花">
+      <button class="tbtn primary" id="taskAdd">添加</button>
+    </div>
+    <div class="seg" style="margin-bottom:10px">
+      <button id="tabTasks" class="on">任务 <span id="taskCnt"></span></button>
+      <button id="tabLogs">操作日志</button>
+    </div>
+    <div id="taskBody"></div>
+  </div>`;
+  $('meBtn2').onclick = openMemberPanel;
+  $('taskAdd').onclick = addTask;
+  $('taskInput').addEventListener('keydown', e => { if(e.key==='Enter') addTask(); });
+  $('tabTasks').onclick = () => { taskTab='tasks'; renderCompetition(); };
+  $('tabLogs').onclick = () => { taskTab='logs'; renderCompetition(); };
+  $('taskCnt').textContent = `${state.tasks.filter(t=>!t.done).length} 未完成 / ${state.tasks.length}`;
+  if(taskTab === 'tasks') renderTaskList(); else renderTaskLogs();
+}
+function renderTaskList(){
+  const box = $('taskBody');
+  const undone = state.tasks.filter(t=>!t.done), done = state.tasks.filter(t=>t.done);
+  const row = t => `<div class="task ${t.done?'done':''}" data-id="${t.id}">
+    <span class="tick">✓</span>
+    <span class="tt">${esc(t.title)}</span>
+    <span class="tm">${fmtTime(t.completed_at || t.created_at)}</span>
+  </div>`;
+  box.innerHTML = (undone.length ? '<div style="font-size:12px;color:var(--sub);margin:4px 0">进行中</div>' + undone.map(row).join('') : '')
+    + (done.length ? '<div style="font-size:12px;color:var(--sub);margin:12px 0 4px">已完成</div>' + done.map(row).join('') : '')
+    + (state.tasks.length ? '' : '<div class="empty">还没有任务，添加一个吧</div>');
+  box.querySelectorAll('.task').forEach(el => {
+    el.onclick = () => toggleTask(el.dataset.id, el.classList.contains('done'));
+  });
+}
+function renderTaskLogs(){
+  const box = $('taskBody');
+  box.innerHTML = state.logs.length ? state.logs.map(l => `
+    <div class="log-item"><span class="who">${esc(l.created_by || '未知')}</span> ${esc(l.content)}<div class="when">${fmtTime(l.created_at)}</div></div>
+  `).join('') : '<div class="empty">暂无操作日志</div>';
+}
+async function addTask(){
+  const title = $('taskInput').value.trim();
+  if(!title) return;
+  try{
+    const { data } = await sb.from('competition_tasks').insert({
+      guild_id: GUILD_ID, title, sort_order: state.tasks.length, created_by: state.me.name
+    }).select().single();
+    await sb.from('competition_logs').insert({ guild_id: GUILD_ID, task_id: data.id, content: `添加任务「${title}」`, created_by: state.me.name });
+    toast('已添加任务');
+    await loadTasks(); renderCompetition();
+  }catch(e){ toast('添加失败：' + e.message); }
+}
+async function toggleTask(id, done){
+  try{
+    const t = state.tasks.find(x => x.id === id);
+    await sb.from('competition_tasks').update({
+      done: !done, completed_at: !done ? new Date().toISOString() : null
+    }).eq('id', id);
+    await sb.from('competition_logs').insert({ guild_id: GUILD_ID, task_id: id, content: `${done ? '取消完成' : '完成任务'}「${t.title}」`, created_by: state.me.name });
+    toast(done ? '已取消完成' : '已完成');
+    await loadTasks(); renderCompetition();
+  }catch(e){ toast('操作失败：' + e.message); }
+}
+
+/* ================= 实时订阅 ================= */
+function subscribe(){
+  if(state.rtChannel) return;
+  const ch = sb.channel('public-live');
+  ['flower_ownership','competition_tasks','competition_logs','guild_members','guilds'].forEach(tbl => {
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, () => scheduleRefresh());
+  });
+  ch.subscribe();
+  state.rtChannel = ch;
+}
+function scheduleRefresh(){
+  clearTimeout(window._rt);
+  window._rt = setTimeout(async () => {
+    if(!state.me || state.loading) return;
+    await loadAll();
+    if(location.hash.includes('competition')) await loadTasks();
+  }, 350);
+}
+
+/* ================= 初始化 ================= */
+window.addEventListener('hashchange', render);
+(async function init(){
+  try{ await loadAll(); }catch(e){}
+  if(location.hash.includes('competition')) await loadTasks();
+  subscribe();
+  render();
+})();
+</script>
+</body>
+</html>
